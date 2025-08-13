@@ -90,7 +90,6 @@ void vos_start(void (*callback)(vos_manager* mgr, int client_fd)) {
         printf("Client added\n");
       }
       vos_client* client = vos_search_client(NULL, client_fd);
-      vos_print_html(client, "<h1>Welcome!<h1>");
     }
 
     callback(g_mangr, client_fd);

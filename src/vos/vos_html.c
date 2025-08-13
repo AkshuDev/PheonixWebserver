@@ -26,7 +26,6 @@ char* vos_display_html(vos_client *client, const char *html_path) {
 
   fread(buffer, 1, size, fd);
   buffer[size] = '\0';
-  fclose(fd);
 
   vos_print_html(client, buffer);
   return buffer;
