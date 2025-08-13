@@ -18,7 +18,7 @@ TARGET := $(buildDir)/ps-webserver
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS)
+$(TARGET): $(SRCS) $(VOSSRCS)
 	@echo "Building..."
 	@mkdir -p $(buildDir)
 	$(CC) $(CFLAGS) $(SRCS) $(VOSSRCS) -o $@

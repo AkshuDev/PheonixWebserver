@@ -66,21 +66,31 @@ void vos_start(void (*callback)(vos_manager* mgr, int client_fd)) {
     if (bytes_read > 0) {
       buffer[bytes_read] = '\0';
       printf("Request:\n\t%s\n\n", buffer);
-      vos_print_html(client_fd, "<h1>Welcome!<h1>");
-
       printf("Searching for Client: %d\n", client_fd);
       if (vos_search_client(NULL, client_fd) == NULL) {
-	printf("Client Not found, Adding Client...\n");
-	vos_client nclient = {
-	  .client_fd = client_fd,
-	  .label = "/",
-	  .location = "/",
-	  .type = "home",
-	};
-    
-	vos_add_client(NULL, &nclient);
-	printf("Client added\n");
+        printf("Client Not found, Adding Client...\n");
+        vos_client nclient = {
+          .location="/",
+          .label="/",
+          .type="home",
+          .gp=NULL,
+          .client_fd=client_fd,
+          .next=NULL,
+          .tail=NULL,
+          .clients=NULL,
+          .client_count=0,
+        };
+          
+        // Add home dir
+        g_mangr->client_count += 1;
+        g_mangr->clients = &nclient;
+        g_mangr->next = g_mangr->clients;
+        g_mangr->tail = g_mangr->clients; // This is the start and the end
+
+        printf("Client added\n");
       }
+      vos_client* client = vos_search_client(NULL, client_fd);
+      vos_print_html(client, "<h1>Welcome!<h1>");
     }
 
     callback(g_mangr, client_fd);
@@ -148,11 +158,11 @@ void vos_print(vos_client *client, const char *data, const char *content_type) {
 }
 
 void vos_print_html(vos_client *client, const char *data) {
-  vos_print(client->client_fd, data, "text/html");
+  vos_print(client, data, "text/html");
 }
 
 void vos_print_text(vos_client *client, const char *data) {
-  vos_print(client->client_fd, data, "text/plain");
+  vos_print(client, data, "text/plain");
 }
 
 void vos_add_client(vos_client *main_client, vos_client *client) {
