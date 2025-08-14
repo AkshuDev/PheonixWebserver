@@ -1,7 +1,9 @@
 #include <vos.h>
+#include <vos_requests.h>
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -61,11 +63,11 @@ void vos_start(void (*callback)(vos_manager* mgr, int client_fd)) {
     }
 
     // HTTP read
-    char buffer[2048];
+    char buffer[VOS_MAX_READ];
     int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
     if (bytes_read > 0) {
       buffer[bytes_read] = '\0';
-      printf("Request:\n\t%s\n\n", buffer);
+      printf("Request found!:\n%s\n", buffer);
       printf("Searching for Client: %d\n", client_fd);
       if (vos_search_client(NULL, client_fd) == NULL) {
         printf("Client Not found, Adding Client...\n");
@@ -89,10 +91,22 @@ void vos_start(void (*callback)(vos_manager* mgr, int client_fd)) {
 
         printf("Client added\n");
       }
-      vos_client* client = vos_search_client(NULL, client_fd);
     }
 
-    callback(g_mangr, client_fd);
+    vos_client* client = vos_search_client(NULL, client_fd);
+
+    if (client) callback(g_mangr, client_fd);
+    
+    if (client != NULL && client->rq_handler) {
+      // Send data
+      vos_rq_handler_t* rq = client->rq_handler;
+      if (bytes_read > 0){
+        rq->request_updater(client, rq->request, buffer);
+      } else {
+        rq->request_updater(client, rq->request, NULL);
+      }
+      rq->handler(g_mangr, client_fd, rq->request);
+    }
 
     close(client_fd);
   }
@@ -100,6 +114,53 @@ void vos_start(void (*callback)(vos_manager* mgr, int client_fd)) {
 
 void vos_stop() {
   if (server_fd >= 0) close(server_fd);
+}
+
+void vos_delete_clients(vos_client* client) {
+  vos_client* cur = client->clients;
+
+  while (cur) {
+    if (cur->rq_handler) free(cur->rq_handler);
+    if (cur->client_count > 0) vos_delete_clients(cur);
+    
+    cur->clients = NULL;
+    cur->tail = NULL;
+    cur->gp = NULL;
+    cur->label = NULL;
+    cur->location = NULL;
+    cur->type = NULL;
+    cur->client_count = 0;
+    cur->client_fd = 0;
+
+    cur = cur->next;
+  }
+}
+
+void vos_delete_all() {
+  vos_client* cur = g_mangr->next;
+
+  while(cur) {
+    if (cur->rq_handler) free(cur->rq_handler);
+    if (cur->client_count > 0) vos_delete_clients(cur);
+    
+    cur->clients = NULL;
+    cur->tail = NULL;
+    cur->gp = NULL;
+    cur->label = NULL;
+    cur->location = NULL;
+    cur->type = NULL;
+    cur->client_count = 0;
+    cur->client_fd = 0;
+
+    cur = cur->next;
+  }
+
+  g_mangr->client_count = 0;
+  g_mangr->clients = NULL;
+  g_mangr->next = NULL;
+  g_mangr->tail = NULL;
+  g_mangr->host = NULL;
+  g_mangr->port = 0;
 }
 
 void vos_send_x(vos_client *client, const char *header, int header_len, const char *data, int data_len) {
@@ -126,7 +187,10 @@ void vos_print_sp(vos_client *client, const char *data, const char *content_type
 	   "HTTP/1.1 %zu OK\r\n"
 	   "Content-Type: %s\r\n"
 	   "Content-Length: %zu\r\n"
-	   "Connection: close\r\n\r\n",
+	   "Connection: close\r\n"
+     "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n"
+     "Pragma: no-cache\r\n"
+     "Expires: 0\r\n\r\n",
 	   status_code, content_type, strlen(data));
   send(client->client_fd, header, strlen(header), 0);
   send(client->client_fd, data, strlen(data), 0);
@@ -138,7 +202,10 @@ void vos_print_x(vos_client *client, const char *data, int data_len, const char 
 	   "HTTP/1.1 200 OK\r\n"
 	   "Content-Type: %s\r\n"
 	   "Content-Length: %zu\r\n"
-	   "Connection: close\r\n\r\n",
+	   "Connection: close\r\n"
+     "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n"
+     "Pragma: no-cache\r\n"
+     "Expires: 0\r\n\r\n",
 	   content_type, data_len);
   send(client->client_fd, header, strlen(header), 0);
   send(client->client_fd, data, data_len, 0);
@@ -150,7 +217,10 @@ void vos_print(vos_client *client, const char *data, const char *content_type) {
 	   "HTTP/1.1 200 OK\r\n"
 	   "Content-Type: %s\r\n"
 	   "Content-Length: %zu\r\n"
-	   "Connection: close\r\n\r\n",
+	   "Connection: close\r\n"
+     "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n"
+     "Pragma: no-cache\r\n"
+     "Expires: 0\r\n\r\n",
 	   content_type, strlen(data));
   send(client->client_fd, header, strlen(header), 0);
   send(client->client_fd, data, strlen(data), 0);
@@ -160,8 +230,34 @@ void vos_print_html(vos_client *client, const char *data) {
   vos_print(client, data, "text/html");
 }
 
+void vos_print_css(vos_client *client, const char *data) {
+  vos_print(client, data, "text/css");
+}
+
+void vos_print_js(vos_client *client, const char *data) {
+  vos_print(client, data, "text/js");
+}
+
 void vos_print_text(vos_client *client, const char *data) {
   vos_print(client, data, "text/plain");
+}
+
+char* vos_read(vos_client* client) {
+  char buf[VOS_MAX_READ];
+  int bytes_read;
+
+  // Read request
+  bytes_read = read(client->client_fd, buf, sizeof(buf) - 1);
+  if (bytes_read < 0) {
+    perror("[ERROR] Unable to read data from client!\n");
+    return NULL;
+  }
+
+  buf[bytes_read] = '\0';
+
+  printf("Request: %s\n", buf);
+
+  return buf; // Done!
 }
 
 void vos_add_client(vos_client *main_client, vos_client *client) {

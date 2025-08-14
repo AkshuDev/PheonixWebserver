@@ -30,3 +30,59 @@ char* vos_display_html(vos_client *client, const char *html_path) {
   vos_print_html(client, buffer);
   return buffer;
 }
+
+char* vos_display_css(vos_client* client, const char* css_path) {
+  // Open the file
+  FILE *fd = fopen(css_path, "r");
+  if (!fd) {
+    vos_print_sp(client, "404 Not Found : CSS file could not be opened.", "text/plain", 404);
+    perror("[ERROR] Could not find CSS file -> vos_display_css\n");
+    return;
+  }
+
+  fseek(fd, 0, SEEK_END);
+  long size = ftell(fd);
+  rewind(fd);
+
+  char *buffer = malloc(size + 1);
+  if (!buffer) {
+    fclose(fd);
+    vos_print_sp(client, "500 Internal Server Error : Memory allocation failed.", "text/plain", 500);
+    perror("[ERROR] Could not allocate memory for CSS file -> vos_display_css\n");
+    return;
+  }
+
+  fread(buffer, 1, size, fd);
+  buffer[size] = '\0';
+
+  vos_print_css(client, buffer);
+  return buffer;
+}
+
+char* vos_display_js(vos_client* client, const char* js_path) {
+  // Open the file
+  FILE *fd = fopen(js_path, "r");
+  if (!fd) {
+    vos_print_sp(client, "404 Not Found : JS file could not be opened.", "text/plain", 404);
+    perror("[ERROR] Could not find JS file -> vos_display_js\n");
+    return;
+  }
+
+  fseek(fd, 0, SEEK_END);
+  long size = ftell(fd);
+  rewind(fd);
+
+  char *buffer = malloc(size + 1);
+  if (!buffer) {
+    fclose(fd);
+    vos_print_sp(client, "500 Internal Server Error : Memory allocation failed.", "text/plain", 500);
+    perror("[ERROR] Could not allocate memory for JS file -> vos_display_js\n");
+    return;
+  }
+
+  fread(buffer, 1, size, fd);
+  buffer[size] = '\0';
+
+  vos_print_js(client, buffer);
+  return buffer;
+}

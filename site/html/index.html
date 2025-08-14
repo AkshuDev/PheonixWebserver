@@ -1,16 +1,47 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html lang="en">
 
-        <title>Pheonix Studios</title>
-        <link href="site/css/index.css" rel="stylesheet">
-    </head>
-    <body>
-        <script src="site/js/navbar.js"></script>
-        <div class="main">
-            <h1 id="main-h1">Welcome To Pheonix Studios</h1>
-        </div>
-    </body>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Phoenix Studios</title>
+    <link rel="stylesheet" href="site/css/index.css" />
+</head>
+
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="brand">
+                <span class="dot"></span>
+                <span class="name">Phoenix Studios</span>
+            </div>
+            <div class="nav-actions">
+                <a class="btn" href="#docs">Docs</a>
+                <button class="btn primary" id="themeToggle">Toggle Theme</button>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <span class="kicker">Projects from godly speeds to developer-friendliness</span>
+            <p>
+
+            </p>
+            <h1>Build the future with us!</h1>
+            <p>Collaborate, View, Experiment, Do whatever you like!</p>
+            <a class="btn primary" href="#get-started">Get Started</a>
+            <a class="btn" href="#projects">
+                <button class="btn primary" id="projectsBtn">
+                    See Projects!
+                </button>
+            </a>
+        </section>
+
+        <footer class="footer">
+            © <span id="year"></span> Phoenix Studios
+        </footer>
+    </div>
+    <script src="site/js/index.js" defer></script>
+    <script src="site/js/theme.js"></script> 
+</body>
+
 </html>
