@@ -6,14 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <sys/stat.h>
-#include <time.h>
-
 static char *host = "0.0.0.0";
 static int port = 8080;
-
-static time_t site_mtime;
-static char* html_data = NULL;
 
 static vos_client* g_client = NULL;
 static vos_request_t g_req = {
@@ -59,6 +53,9 @@ void mreqhandler(vos_manager* mgr, int client_fd, vos_request_t* request) {
     vos_display_js(client, npath);
     printf("Loaded: %s\n", npath);
     free(npath);
+  } else if (strstr(request->path, "/")) {
+    vos_display_html(client, "site/html/index.html");
+    printf("Loaded: %s\n", request->path);
   }
 }
 
@@ -66,21 +63,6 @@ void meventloop(vos_manager *mgr, int client_fd) { // Add hot reload
   if (g_client == NULL) g_client = vos_search_client(NULL, client_fd); vos_handle_request(g_client, &g_req, mreqhandler);
 
   vos_client* client = vos_search_client(NULL, client_fd);
-
-  struct stat st;
-
-  if (stat("site/html/index.html", &st) < 0) {
-    printf("[Server] [ERROR] Could not load HTML file!\n");
-    return; // No file found
-  }
-
-  stat("site/html/index.html", &st); // For safety
-
-  if (st.st_mtime != site_mtime) {
-    html_data = vos_display_html(client, "site/html/index.html");
-    site_mtime = st.st_mtime;
-    printf("[Server] Updated Modified Timings.\n");
-  }
 }
 
 int main() {
