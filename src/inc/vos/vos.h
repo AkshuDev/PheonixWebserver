@@ -55,6 +55,7 @@ struct vos_client_fd {
 struct vos_manager_fd {
   char *host;
   int port;
+  char* exec_path;
   vos_client *clients;
   vos_client *next;
   vos_client *tail;

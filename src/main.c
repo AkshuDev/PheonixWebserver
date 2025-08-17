@@ -68,7 +68,8 @@ void meventloop(vos_manager *mgr, int client_fd) { // Add hot reload
 int main() {
   vos_manager mgr = {
     .host=host,
-    .port=port
+    .port=port,
+    .exec_path="site/pheonixstudios.vos"
   };
 
   if (vos_initialize(&mgr) == 0) {
